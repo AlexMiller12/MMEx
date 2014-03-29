@@ -5,7 +5,7 @@ public class Player : Singleton<Player>
 {
 
 //-----------------------------------------------------------------CONSTANTS/FIELDS:
-	
+	private CameraCollider camCollider;
 	private const float GUN_RANGE = 50;
 	public Texture2D crosshairTexture;
 	private int crosshairWidth = 100, crosshairHeight = 100; //TODO dynamically set based on resolution
@@ -17,7 +17,7 @@ public class Player : Singleton<Player>
 	void Start() 
 	{
 		charge = 1;
-		
+		camCollider = CameraCollider.Instance;
 	}
 	
 	void OnGUI()
@@ -46,6 +46,12 @@ public class Player : Singleton<Player>
 		{
 			shootRay();
 		}
+		if(Input.GetKeyDown(KeyCode.F)) 
+		{
+			charge++;
+		}
+		
+		//transform.position = camCollider.transform.position;
 	}
 	
 //--------------------------------------------------------------------------METHODS:
@@ -73,8 +79,8 @@ public class Player : Singleton<Player>
 		return transform.position;
 	}
 	
-	public void push(Vector3 pushDist)
+	public void push(Vector3 direction, float forcePower)
 	{
-		transform.Translate(pushDist);
+		transform.rigidbody.AddForce(direction * forcePower);
 	}
 }

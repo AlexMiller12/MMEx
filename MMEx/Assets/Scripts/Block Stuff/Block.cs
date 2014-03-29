@@ -6,13 +6,15 @@ public class Block : MonoBehaviour
 
 //-----------------------------------------------------------------CONSTANTS/FIELDS:	
 	
-	private const float EXTRUSION_SCALER = 10.0f;
+	private const float EXTRUSION_SCALER = 1.0f;
 	private const float EPSILON = 0.001f;
-	private const float SPEED = 1.0f;
+	private const float BASE_SPEED = 1.0f; //TODO necessary?
+	private const float IMPACT_FORCE = 30f;
 	
 	public SurfaceType xPos, xNeg, yPos, yNeg, zPos, zNeg;
 	bool isOscillating, isExtruding; //TODO with anim?
 	
+	private float currentSpeed;
 	private float traveled, journeyLength;	
 	private float extrusionStartTime;
 	private Vector3 extrusionStartPos, extrusionDirection;
@@ -118,7 +120,7 @@ public class Block : MonoBehaviour
 		// If collision hits player
 		if (collision.collider.gameObject.Equals(player.gameObject))
 		{
-			player.push(pushDist);
+			player.push(extrusionDirection, currentSpeed * IMPACT_FORCE);
 			return;
 		}
 		foreach(ContactPoint contact in collision.contacts) 
@@ -138,7 +140,7 @@ public class Block : MonoBehaviour
 	public void handleShot(RaycastHit hit, int shotCharge)
 	{
 		if(!isExtruding) 
-		{
+		{			
 			SurfaceType surfaceType = this.getSurfaceType(hit);
 			FaceType faceType = this.getFaceType(hit);
 			switch(surfaceType)
@@ -177,7 +179,7 @@ public class Block : MonoBehaviour
 	private void stepExtrusion()
 	{
 		
-		float distCovered = SPEED * (Time.time - extrusionStartTime);
+		float distCovered = currentSpeed * (Time.time - extrusionStartTime);
 		float fracJourney = distCovered / journeyLength;
 		if (journeyLength < EPSILON)
 		{
@@ -186,7 +188,7 @@ public class Block : MonoBehaviour
 		Vector3 lastPosition = transform.position;
 		transform.position = Vector3.Lerp(extrusionStartPos, destPos, fracJourney);
 		// Double position difference to account for dist gained by scaling
-		pushDist = 2.0f * (lastPosition - transform.position);
+		pushDist = 2.0f * (transform.position - lastPosition);
 		transform.localScale = origScale + totalScaleAmt * fracJourney;
 		
 		if (fracJourney >= 1.0f - EPSILON)   
@@ -198,6 +200,7 @@ public class Block : MonoBehaviour
 		
 	private void permImpact(FaceType faceType, int shotCharge)
 	{
+		currentSpeed = shotCharge * EXTRUSION_SCALER;
 		float extrusionScaler = shotCharge * EXTRUSION_SCALER;
 		Vector3 translation = calcTranslation(faceType) * 0.5f * extrusionScaler;
 		Vector3 scale = calcScale(faceType) * extrusionScaler;

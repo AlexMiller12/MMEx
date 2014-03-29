@@ -7,7 +7,7 @@ public class Block : MonoBehaviour
 //-----------------------------------------------------------------CONSTANTS/FIELDS:	
 	
 	private const float EXTRUSION_SCALER = 1.0f;
-	private const float EPSILON = 0.001f;
+	private const float EPSILON = 0.01f;
 	private const float BASE_SPEED = 1.0f; //TODO necessary?
 	private const float IMPACT_FORCE = 30f;
 	
@@ -131,7 +131,7 @@ public class Block : MonoBehaviour
 				Mathf.Abs(dirNorm.z) < EPSILON)
 			{
 				Debug.Log("Block --- I'm freezing!");
-				isExtruding = false;
+				stopExtruding();
 				return;
 			}
 		}
@@ -173,7 +173,6 @@ public class Block : MonoBehaviour
 		extrusionStartPos = transform.position;
 		totalScaleAmt = desiredScale;
 		origScale = transform.localScale;
-		
 	}
 	
 	private void stepExtrusion()
@@ -197,7 +196,18 @@ public class Block : MonoBehaviour
 		}
 		
 	}
-		
+	
+	public void stopExtruding()
+	{
+		isExtruding = false;
+	}
+	private bool sweep()
+	{
+		RaycastHit hit;
+		float distance = 0.3f;
+		return !transform.rigidbody.SweepTest(extrusionDirection, out hit, distance);
+	}
+	
 	private void permImpact(FaceType faceType, int shotCharge)
 	{
 		currentSpeed = shotCharge * EXTRUSION_SCALER;
@@ -219,4 +229,11 @@ public class Block : MonoBehaviour
 		
 	}
 	
+	public Vector3 ExtrusionDirection
+	{
+		get
+		{
+			return extrusionDirection;
+		}
+	}
 }

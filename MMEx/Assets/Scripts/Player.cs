@@ -7,6 +7,7 @@ public class Player : Singleton<Player>
 //-----------------------------------------------------------------CONSTANTS/FIELDS:
 	private CameraCollider camCollider;
 	private const float GUN_RANGE = 50;
+	private const float COLLIDER_RADIUS = 1f;
 	public Texture2D crosshairTexture;
 	private int crosshairWidth = 100, crosshairHeight = 100; //TODO dynamically set based on resolution
 	private int charge;
@@ -28,15 +29,26 @@ public class Player : Singleton<Player>
 		GUI.DrawTexture(position, crosshairTexture);
 	}
 	
+	bool isColliderStriking(Collision collision, Block strikingBlock)
+	{
+		Vector3 dirOfCollider = collision.transform.position - transform.position;
+		return Vector3.Dot(dirOfCollider, strikingBlock.ExtrusionDirection) < 0.0f;
+	}
+	
 	void OnCollisionEnter(Collision collision)
 	{
 		Debug.Log("Player --- Bumped into something!");
 		Block strikingBlock = collision.collider.gameObject.GetComponent<Block>();
-		if (strikingBlock != null)
+		if (strikingBlock != null && isColliderStriking(collision, strikingBlock))
 		{
-			
-		//TODO freeze blocks if appropriate
-			//isColliding = true;?
+			Vector3 direction = strikingBlock.ExtrusionDirection;
+			RaycastHit hit;
+			float distance = COLLIDER_RADIUS;
+			Vector3 origin = transform.position + direction * COLLIDER_RADIUS;
+			if (Physics.Raycast(transform.position, direction, distance)) 
+			{
+				strikingBlock.stopExtruding();
+			}
 		}
 	}
 	

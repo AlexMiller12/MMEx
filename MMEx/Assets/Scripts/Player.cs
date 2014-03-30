@@ -8,27 +8,29 @@ public class Player : Singleton<Player>
 	private CameraCollider camCollider;
 	private const float GUN_RANGE = 50;
 	private const float COLLIDER_RADIUS = 1f;
-	private const float MAX_CHARGE = 2f;
+	private const float MAX_CHARGE = 2.71f;
 	public Texture2D crosshairTexture;
-	private int crosshairWidth = 100, crosshairHeight = 100; //TODO dynamically set based on resolution
-	private float charge;
+	private float crosshairWidth = 50, crosshairHeight = 50; //TODO dynamically set based on resolution
+	private float charge = 0;
 	private bool charging = false;
+	private LevelManager levelManager;
 
 //-------------------------------------------------------------MONOBEHAVIOR METHDOS:
 	
 	
 	void Start() 
 	{
-		charge = 1;
 		camCollider = CameraCollider.Instance;
+		levelManager = LevelManager.Instance;
 	}
 	
 	void OnGUI()
 	{
-		//crosshairWidth *= 
-		float top = (Screen.height - crosshairHeight) / 2;
-		float left = (Screen.width - crosshairWidth) / 2;
-		Rect position = new Rect(left, top, crosshairWidth, crosshairHeight);
+		float currentWidth = (crosshairWidth * (charge + 1));
+		float currentHeight = (crosshairHeight * (charge + 1));
+		float top = (Screen.height - currentHeight) / 2;
+		float left = (Screen.width - currentWidth) / 2;
+		Rect position = new Rect(left, top, currentWidth, currentHeight);
 		GUI.DrawTexture(position, crosshairTexture);
 	}
 	
@@ -71,9 +73,15 @@ public class Player : Singleton<Player>
 		if(charging)
 		{
 			charge += Time.deltaTime;
+			if(charge > MAX_CHARGE)
+			{
+				charge = MAX_CHARGE;
+			}
 		}
-		
-		//transform.position = camCollider.transform.position;
+		if (Input.GetKeyDown(KeyCode.R))
+		{
+			levelManager.resetBlocks();
+		}
 	}
 	
 //--------------------------------------------------------------------------METHODS:

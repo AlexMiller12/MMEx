@@ -6,13 +6,14 @@ public class Block : MonoBehaviour
 
 //-----------------------------------------------------------------CONSTANTS/FIELDS:	
 	
-	private const float EXTRUSION_SCALER = 1.0f;
+	private const float EXTRUSION_SCALER = 2.0f;
 	private const float EPSILON = 0.01f;
-	private const float BASE_SPEED = 1.0f; //TODO necessary?
+	private const float BASE_SPEED = 1.12f;
 	private const float IMPACT_FORCE = 30f;
 	
 	public SurfaceType xPos, xNeg, yPos, yNeg, zPos, zNeg;
 	bool isOscillating, isExtruding; //TODO with anim?
+	bool isResetting = false;
 	
 	private float currentSpeed;
 	private float traveled, journeyLength;	
@@ -20,16 +21,24 @@ public class Block : MonoBehaviour
 	private Vector3 extrusionStartPos, extrusionDirection;
 	private Vector3 pushDist; // Distance we will push the player on impact
 	private Vector3 destPos, destScale, totalScaleAmt, origScale;
+	
+	private Vector3 initialPosition, initialScale;
 	private Player player;
+	private LevelManager levelManager;
 	
 //-------------------------------------------------------------MONOBEHAVIOR METHDOS:
 	
 	void FixedUpdate()
 	{
-		if (isExtruding)
+		if(isResetting)
+		{
+			
+		}
+		else if (isExtruding)
 		{
 			stepExtrusion();
 		}
+		
 	}
 	
 	void OnCollisionEnter(Collision collision)
@@ -44,6 +53,10 @@ public class Block : MonoBehaviour
 		isExtruding = false;
 		transform.rigidbody.constraints = RigidbodyConstraints.FreezeAll;
 		player = Player.Instance;
+		levelManager = LevelManager.Instance;
+		levelManager.addBlock(this);
+		initialPosition = transform.position;
+		initialScale = transform.localScale;
 	}
 	
 //--------------------------------------------------------------------------METHODS:
@@ -157,7 +170,7 @@ public class Block : MonoBehaviour
 	{
 	}
 	
-	public void handleShot(RaycastHit hit, int shotCharge)
+	public void handleShot(RaycastHit hit, float shotCharge)
 	{
 		if(!isExtruding) 
 		{			
@@ -182,6 +195,15 @@ public class Block : MonoBehaviour
 			}
 		}
 	}
+	
+	public void reset()
+	{
+		stopExtruding();
+		//transform.localScale = initialScale;
+		//transform.position = initialPosition;
+		startReset(initialPosition, initialScale);
+	}
+	
 	
 	private void startExtrusion(Vector3 desiredTranslation, Vector3 desiredScale)
 	{
@@ -219,28 +241,37 @@ public class Block : MonoBehaviour
 		}
 		
 	}
+	private void startReset(Vector3 desiredPosition, Vector3 desiredScale)
+	{
+		StartCoroutine(TweenReset(transform.position, transform.localScale, .3f));
+	}
 	
 	public void stopExtruding()
 	{
 		isExtruding = false;
 	}
 	
+	
 	private bool sweep()
 	{
 		RaycastHit hit;
-		float sweepDistance = 0.3f;
+		float sweepDistance = 0.27f;
 		Vector3 origScale = transform.localScale;
 		transform.localScale *= 0.98f;
 		bool hitSomething = transform.rigidbody.SweepTest(extrusionDirection, 
 														  out hit, 
 														  sweepDistance);
 		transform.localScale = origScale; 
+		if (hit.collider != null && hit.collider.gameObject.Equals(player.gameObject))
+		{
+			hitSomething = false;
+		}
 		return hitSomething;		
 	}
 	
-	private void permImpact(FaceType faceType, int shotCharge)
+	private void permImpact(FaceType faceType, float shotCharge)
 	{
-		currentSpeed = shotCharge * EXTRUSION_SCALER;
+		currentSpeed = shotCharge * BASE_SPEED;
 		float extrusionScaler = shotCharge * EXTRUSION_SCALER;
 		Vector3 translation = calcTranslation(faceType) * 0.5f * extrusionScaler;
 		Vector3 scale = calcScale(faceType) * extrusionScaler;
@@ -265,5 +296,20 @@ public class Block : MonoBehaviour
 		{
 			return extrusionDirection;
 		}
+	}
+	
+	IEnumerator TweenReset(Vector3 startPos, Vector3 startScale, float totalTime) {
+		for (float elapsedTime = 0; elapsedTime < totalTime; elapsedTime += Time.deltaTime)
+		{
+			float newTime = elapsedTime/totalTime;
+			newTime = Mathf.Sin(newTime * Mathf.PI * 0.5f);
+			
+			transform.position = Vector3.Lerp(startPos, initialPosition, newTime);
+			transform.localScale = Vector3.Lerp(startScale, initialScale, newTime); 
+			yield return 0;
+		}
+		transform.position = initialPosition;
+		transform.localScale = initialScale;
+		isResetting = false;
 	}
 }

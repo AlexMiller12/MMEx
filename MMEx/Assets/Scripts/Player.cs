@@ -8,9 +8,11 @@ public class Player : Singleton<Player>
 	private CameraCollider camCollider;
 	private const float GUN_RANGE = 50;
 	private const float COLLIDER_RADIUS = 1f;
+	private const float MAX_CHARGE = 2f;
 	public Texture2D crosshairTexture;
 	private int crosshairWidth = 100, crosshairHeight = 100; //TODO dynamically set based on resolution
-	private int charge;
+	private float charge;
+	private bool charging = false;
 
 //-------------------------------------------------------------MONOBEHAVIOR METHDOS:
 	
@@ -23,6 +25,7 @@ public class Player : Singleton<Player>
 	
 	void OnGUI()
 	{
+		//crosshairWidth *= 
 		float top = (Screen.height - crosshairHeight) / 2;
 		float left = (Screen.width - crosshairWidth) / 2;
 		Rect position = new Rect(left, top, crosshairWidth, crosshairHeight);
@@ -47,6 +50,7 @@ public class Player : Singleton<Player>
 			Vector3 origin = transform.position + direction * COLLIDER_RADIUS;
 			if (Physics.Raycast(transform.position, direction, distance)) 
 			{
+				Debug.Log ("Player --- TODO kill");
 				strikingBlock.stopExtruding();
 			}
 		}
@@ -54,13 +58,19 @@ public class Player : Singleton<Player>
 	
 	void Update()
 	{
-		if(Input.GetKeyDown(KeyCode.Space)) 
+		if (Input.GetMouseButtonDown(0)) 
+		{
+			charging = true;
+		}
+		if (Input.GetMouseButtonUp(0))
 		{
 			shootRay();
+			charging = false;
+			charge = 0;
 		}
-		if(Input.GetKeyDown(KeyCode.F)) 
+		if(charging)
 		{
-			charge++;
+			charge += Time.deltaTime;
 		}
 		
 		//transform.position = camCollider.transform.position;

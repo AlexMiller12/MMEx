@@ -20,6 +20,7 @@ public class Block : MonoBehaviour
 	private Vector3 extrusionStartPos, extrusionDirection;
 	private Vector3 pushDist; // Distance we will push the player on impact
 	private Vector3 destPos, destScale, totalScaleAmt, origScale;
+	private Player player;
 	
 //-------------------------------------------------------------MONOBEHAVIOR METHDOS:
 	
@@ -42,6 +43,7 @@ public class Block : MonoBehaviour
 		isOscillating = false; //TODO temp?
 		isExtruding = false;
 		transform.rigidbody.constraints = RigidbodyConstraints.FreezeAll;
+		player = Player.Instance;
 	}
 	
 //--------------------------------------------------------------------------METHODS:
@@ -110,17 +112,31 @@ public class Block : MonoBehaviour
 		else if(hit.normal.z > 0)    return zPos;
 		else   return zNeg;
 	}
+	private SurfaceType getSurfaceCollision(Vector3 normal)
+	{
+		if(normal.x > 0)    return xPos;
+		else if(normal.x < 0)    return xNeg;
+		else if(normal.y > 0)    return yPos;
+		else if(normal.y < 0)    return yNeg;
+		else if(normal.z > 0)    return zPos;
+		else   return zNeg;
+	}
 	
 	/*
 	 * Returns true if strikes other surface and should stop
 	 */
 	private void handleCollision(Collision collision) 
 	{
-		Player player = Player.Instance;
-		// If collision hits player
 		if (collision.collider.gameObject.Equals(player.gameObject))
 		{
-			player.push(extrusionDirection, currentSpeed * IMPACT_FORCE);
+			Vector3 collisionNormal = collision.contacts[0].normal;
+			SurfaceType surfaceHit = getSurfaceCollision(collisionNormal);
+			if(surfaceHit == SurfaceType.ELASTIC) {
+				handleElasticCollision();
+			}
+			else {
+				player.push(extrusionDirection, currentSpeed * IMPACT_FORCE);
+			}
 			return;
 		}
 		foreach(ContactPoint contact in collision.contacts) 
@@ -135,6 +151,10 @@ public class Block : MonoBehaviour
 				return;
 			}
 		}
+	}
+	
+	public void handleElasticCollision()
+	{
 	}
 	
 	public void handleShot(RaycastHit hit, int shotCharge)
@@ -166,13 +186,16 @@ public class Block : MonoBehaviour
 	private void startExtrusion(Vector3 desiredTranslation, Vector3 desiredScale)
 	{
 		extrusionDirection = Vector3.Normalize(desiredTranslation);
-		destPos = desiredTranslation + transform.position;
-		journeyLength = Vector3.Distance(transform.position, destPos);
-		isExtruding = true;
-		extrusionStartTime = Time.time;
-		extrusionStartPos = transform.position;
-		totalScaleAmt = desiredScale;
-		origScale = transform.localScale;
+		if( ! sweep())
+		{
+			destPos = desiredTranslation + transform.position;
+			journeyLength = Vector3.Distance(transform.position, destPos);
+			isExtruding = true;
+			extrusionStartTime = Time.time;
+			extrusionStartPos = transform.position;
+			totalScaleAmt = desiredScale;
+			origScale = transform.localScale;
+		}
 	}
 	
 	private void stepExtrusion()
@@ -201,11 +224,18 @@ public class Block : MonoBehaviour
 	{
 		isExtruding = false;
 	}
+	
 	private bool sweep()
 	{
 		RaycastHit hit;
-		float distance = 0.3f;
-		return !transform.rigidbody.SweepTest(extrusionDirection, out hit, distance);
+		float sweepDistance = 0.3f;
+		Vector3 origScale = transform.localScale;
+		transform.localScale *= 0.98f;
+		bool hitSomething = transform.rigidbody.SweepTest(extrusionDirection, 
+														  out hit, 
+														  sweepDistance);
+		transform.localScale = origScale; 
+		return hitSomething;		
 	}
 	
 	private void permImpact(FaceType faceType, int shotCharge)

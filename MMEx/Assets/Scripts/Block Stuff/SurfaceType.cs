@@ -3,5 +3,5 @@ using System.Collections;
 
 public enum SurfaceType {
 
-	REFLECTIVE, DEAD, TEMP, PERM
+	REFLECTIVE, DEAD, TEMP, PERM, STICKY, ELASTIC
 }
